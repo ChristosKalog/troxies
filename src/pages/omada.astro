@@ -1,0 +1,176 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Orbits from '../components/Orbits.astro';
+import Media from '../components/Media.astro';
+import { site, timeline } from '../site.config';
+
+const meli = (await getCollection('meli')).sort((a, b) => a.data.order - b.data.order);
+const shows = (await getCollection('parastaseis')).sort((a, b) => b.data.order - a.data.order);
+
+// Συνεργάτες: μαζεύονται αυτόματα από τις ταυτότητες όλων των παραστάσεων
+const memberNames = new Set(meli.map((m) => m.data.name));
+const collab = new Map<string, Set<string>>();
+for (const s of shows) {
+  for (const c of s.data.credits ?? []) {
+    for (const raw of c.names.split(',')) {
+      const name = raw.trim();
+      if (!name || memberNames.has(name) || name.startsWith('Ομάδα') || name.startsWith('Εταιρεία') || name.startsWith('Υπουργείο')) continue;
+      if (!collab.has(name)) collab.set(name, new Set());
+      collab.get(name)!.add(c.role.toLowerCase());
+    }
+  }
+  for (const name of s.data.cast ?? []) {
+    if (memberNames.has(name)) continue;
+    if (!collab.has(name)) collab.set(name, new Set());
+    collab.get(name)!.add('ερμηνεία');
+  }
+}
+const collaborators = [...collab.entries()].sort((a, b) => a[0].localeCompare(b[0], 'el'));
+---
+
+<Base title="Ομάδα" description={site.description}>
+  <section class="section intro">
+    <div class="wrap intro-grid">
+      <h1><span class="reveal-line"><span>Ομάδα</span></span></h1>
+      <div class="prose">
+        <p class="lead">Οι Τροχιές σχηματίστηκαν τον Φεβρουάριο του 2023 στη Θεσσαλονίκη, γύρω από μια παράσταση για το μετρό της πόλης.</p>
+        <p>
+          Από τον Νοέμβριο του ίδιου χρόνου είμαστε Εταιρεία Θεάτρου. Δουλεύουμε με συλλογική έρευνα και δραματουργία: ξεκινάμε
+          από ένα ερώτημα, μιλάμε με ανθρώπους, αυτοσχεδιάζουμε, και ψάχνουμε τρόπους να ενώσουμε το πολιτικό με το προσωπικό.
+          Το θέατρο για εμάς είναι χώρος ελευθερίας, ρήξης και τολμηρής φαντασίας.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section members" aria-labelledby="members-title">
+    <div class="wrap members-grid" data-orbit-host>
+      <div class="members-list">
+        <h2 id="members-title">Ο πυρήνας</h2>
+        <p class="meta">Κάθε τροχιά είναι ένας άνθρωπος. Πέρασε πάνω από ένα όνομα.</p>
+        <ul role="list" data-members>
+          {meli.map((m) => (
+            <li>
+              <button type="button" data-member={m.id}>
+                <span class="m-name serif">{m.data.name}</span>
+                <span class="m-role meta">{m.data.role}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div class="members-orbits">
+        <Orbits
+          labels={meli.map((m) => m.data.name.split(' ')[0])}
+          ids={meli.map((m) => m.id)}
+          seed="meli"
+          title="Οι τροχιές των μελών της ομάδας"
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="tl-title">
+    <div class="wrap tl-grid">
+      <h2 id="tl-title">Η διαδρομή</h2>
+      <ol role="list" class="timeline">
+        {timeline.map((t) => (
+          <li>
+            <span class="tl-when meta">{t.when}</span>
+            <p>{t.what}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="photo-title">
+    <div class="wrap">
+      <h2 id="photo-title" class="visually-hidden">Φωτογραφία ομάδας</h2>
+      <Media seed="omada-photo" ratio="21 / 9" label="Εδώ θα μπει φωτογραφία της ομάδας" />
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="collab-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="collab-title">Συνεργάστηκαν μαζί μας</h2>
+      </div>
+      <ul role="list" class="collab">
+        {collaborators.map(([name, roles]) => (
+          <li><span>{name}</span> <span class="meta">{[...roles].join(', ')}</span></li>
+        ))}
+      </ul>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .intro-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--space-l); align-items: start; }
+  .intro h1 { font-size: var(--step-5); line-height: 0.9; }
+  .prose { display: grid; gap: var(--space-m); }
+
+  .members-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--space-l); align-items: center; }
+  .members-list { display: grid; gap: var(--space-s); align-content: start; }
+  .members-list ul { margin-top: var(--space-m); border-top: 1px solid var(--ink); }
+  .members-list li { border-bottom: 1px solid var(--rule); }
+  .members-list button {
+    width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    padding: 0.85rem 0; transition: padding var(--t-med) var(--ease-orbit), color var(--t-fast);
+  }
+  .m-name { font-size: var(--step-1); }
+  .m-role { text-align: right; }
+  [data-members]:hover button, [data-members].has-active button { color: var(--ink-soft); }
+  [data-members] button.is-active { color: var(--ink); padding-left: 1.2rem; }
+  [data-members] button.is-active .m-name { color: var(--accent); }
+
+  .tl-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--space-l); }
+  .timeline { position: relative; display: grid; gap: var(--space-l); padding-left: 2rem; }
+  .timeline::before { content: ''; position: absolute; left: 5px; top: 0.5rem; bottom: 0.5rem; width: 1px; background: var(--ink); }
+  .timeline li { position: relative; display: grid; gap: 0.3rem; }
+  .timeline li::before {
+    content: ''; position: absolute; left: calc(-2rem + 0px); top: 0.35rem; width: 11px; height: 11px;
+    border: 1px solid var(--ink); border-radius: 50%; background: var(--paper);
+    transition: background var(--t-fast), transform var(--t-med) var(--ease-orbit);
+  }
+  .timeline li:hover::before { background: var(--accent); transform: scale(1.5); }
+  .timeline li:last-child::before { background: var(--ink); }
+  .timeline p { font-size: var(--step-1); font-weight: 300; line-height: 1.35; }
+
+  .collab { columns: 3 16rem; column-gap: var(--space-l); }
+  .collab li { break-inside: avoid; padding-block: 0.55rem; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; }
+
+  @media (max-width: 820px) {
+    .intro-grid, .members-grid, .tl-grid { grid-template-columns: 1fr; }
+    .members-orbits { order: -1; }
+  }
+</style>
+
+<script>
+  function setupMembers() {
+    const list = document.querySelector<HTMLElement>('[data-members]');
+    const svg = document.querySelector<SVGSVGElement>('.members-orbits svg');
+    if (!list || !svg) return;
+    const buttons = [...list.querySelectorAll<HTMLButtonElement>('[data-member]')];
+    const activate = (id: string | null) => {
+      svg.dispatchEvent(new CustomEvent('orbit:active', { detail: id }));
+      list.classList.toggle('has-active', id !== null);
+      buttons.forEach((b) => b.classList.toggle('is-active', b.dataset.member === id));
+    };
+    buttons.forEach((b) => {
+      b.addEventListener('pointerenter', () => activate(b.dataset.member!));
+      b.addEventListener('focus', () => activate(b.dataset.member!));
+      b.addEventListener('click', () => activate(b.dataset.member!));
+    });
+    list.addEventListener('pointerleave', () => activate(null));
+    list.addEventListener('focusout', (e) => { if (!list.contains(e.relatedTarget as Node)) activate(null); });
+    // κι αντίστροφα: hover σε τροχιά → επισήμανση ονόματος
+    svg.querySelectorAll<SVGGElement>('[data-orbit]').forEach((g) => {
+      g.style.pointerEvents = 'stroke';
+      g.addEventListener('pointerenter', () => activate(g.dataset.orbit!));
+      g.addEventListener('pointerleave', () => activate(null));
+    });
+  }
+  document.addEventListener('astro:page-load', setupMembers);
+</script>

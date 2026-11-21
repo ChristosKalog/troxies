@@ -1,0 +1,192 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Media from '../../components/Media.astro';
+import RingLink from '../../components/RingLink.astro';
+import { formatRange, isPast } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const shows = (await getCollection('parastaseis')).sort((a, b) => b.data.order - a.data.order);
+  return shows.map((show, i) => ({
+    params: { slug: show.id },
+    props: { show, next: shows[(i + 1) % shows.length] },
+  }));
+}
+
+interface Props { show: CollectionEntry<'parastaseis'>; next: CollectionEntry<'parastaseis'> }
+const { show, next } = Astro.props;
+const d = show.data;
+const { Content } = await render(show);
+const gallery = d.gallery?.length ? d.gallery : [undefined, undefined, undefined];
+---
+
+<Base title={d.title} description={d.summary}>
+  <article>
+    <header class="wrap show-head">
+      <p class="meta crumbs"><a class="link" href="/parastaseis/">Παραστάσεις</a> <span aria-hidden="true">/</span> {d.years ?? '—'}</p>
+      <h1 transition:name={`show-${show.id}`}>{d.title}</h1>
+      {d.subtitle && <p class="subtitle">{d.subtitle}</p>}
+      {d.award && (
+        <p class="award" data-hover>
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="50" cy="50" rx="49" ry="47" /></svg>
+          <span>{d.award}</span>
+        </p>
+      )}
+    </header>
+
+    <div class="wrap cover">
+      <Media src={d.cover} seed={show.id} ratio="16 / 8" label="Εδώ θα μπει η κεντρική φωτογραφία της παράστασης" />
+    </div>
+
+    <div class="wrap body">
+      <div class="prose synopsis">
+        {d.incomplete && <p class="todo meta">Η σελίδα περιμένει ακόμα κείμενο και στοιχεία.</p>}
+        <Content />
+      </div>
+
+      <aside class="facts">
+        {d.duration && (
+          <div class="fact"><h2 class="meta">Διάρκεια</h2><p>{d.duration}</p></div>
+        )}
+        {d.cast && (
+          <div class="fact">
+            <h2 class="meta">Παίζουν</h2>
+            <ul role="list">{d.cast.map((c) => <li>{c}</li>)}</ul>
+          </div>
+        )}
+      </aside>
+    </div>
+
+    {d.dates && (
+      <section class="section wrap" aria-labelledby="dates-title">
+        <h2 id="dates-title" class="block-title">Παραστάσεις και σκηνές</h2>
+        <ul role="list" class="dates">
+          {d.dates.map((x) => (
+            <li class:list={{ past: isPast(x) }}>
+              <span class="city serif">{x.city}</span>
+              <span>{x.venue}{x.note && <span class="meta"> ({x.note})</span>}</span>
+              <span class="when">{formatRange(x)}</span>
+              {x.tickets && !isPast(x) && <a class="link" href={x.tickets} target="_blank" rel="noopener">Εισιτήρια</a>}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {d.credits && (
+      <section class="section wrap" aria-labelledby="credits-title">
+        <h2 id="credits-title" class="block-title">Ταυτότητα παράστασης</h2>
+        <dl class="credits">
+          {d.credits.map((c) => (
+            <div><dt class="meta">{c.role}</dt><dd>{c.names}</dd></div>
+          ))}
+        </dl>
+      </section>
+    )}
+
+    {d.press && (
+      <section class="section press" aria-labelledby="press-title">
+        <div class="wrap">
+          <h2 id="press-title" class="block-title">Είπαν</h2>
+          <ul role="list" class="quotes">
+            {d.press.map((p) => (
+              <li>
+                <blockquote class="serif">«{p.quote}»</blockquote>
+                <p class="meta">{p.author}, {p.outlet}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )}
+
+    <section class="section wrap" aria-label="Φωτογραφίες">
+      <div class="gallery">
+        {gallery.map((src, i) => (
+          <Media src={src} seed={`${show.id}-g${i}`} ratio={['3 / 4', '4 / 3', '1 / 1'][i % 3]} label="Εδώ θα μπει φωτογραφία από την παράσταση" />
+        ))}
+      </div>
+    </section>
+
+    {next.id !== show.id && (
+      <nav class="section next" aria-label="Επόμενη παράσταση">
+        <div class="wrap">
+          <p class="meta">Επόμενη παράσταση</p>
+          <RingLink href={`/parastaseis/${next.id}/`} class="next-link" tilt={-2}>
+            <span class="serif">{next.data.title}</span>
+          </RingLink>
+        </div>
+      </nav>
+    )}
+  </article>
+</Base>
+
+<style>
+  .show-head { padding-top: var(--space-l); padding-bottom: var(--space-l); display: grid; gap: var(--space-m); justify-items: start; }
+  .crumbs { display: flex; gap: 0.5rem; }
+  .show-head h1 { font-size: var(--step-5); line-height: 0.92; max-width: 14ch; }
+  .subtitle { font-size: var(--step-1); font-weight: 300; max-width: 40ch; }
+  .award { position: relative; display: inline-grid; place-items: center; padding: 1.4rem 2.4rem; max-width: 30ch; text-align: center; font-size: var(--step--1); }
+  .award svg { position: absolute; inset: -0.4rem -0.8rem; width: auto; height: auto; max-width: none; overflow: visible; rotate: -5deg; transition: rotate 1.2s var(--ease-orbit); }
+  .award:hover svg { rotate: 175deg; }
+  .award ellipse { fill: none; stroke: var(--accent); stroke-width: 1; vector-effect: non-scaling-stroke; }
+
+  /* Η κεντρική εικόνα ανοίγει από έλλειψη σε ορθογώνιο καθώς κάνεις scroll */
+  .cover :global(.media) { clip-path: ellipse(42% 46% at 50% 50%); }
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .cover :global(.media) {
+        animation: open-cover linear both;
+        animation-timeline: view();
+        animation-range: entry 40% cover 50%;
+      }
+    }
+  }
+  @keyframes open-cover {
+    from { clip-path: ellipse(30% 40% at 50% 50%); }
+    to { clip-path: ellipse(75% 75% at 50% 50%); }
+  }
+
+  .body { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--space-l); padding-block: var(--space-xl); }
+  .synopsis :global(p:first-child) { font-size: var(--step-2); font-weight: 280; line-height: 1.25; max-width: 28ch; margin-bottom: 1.5em; }
+  .todo { border: 1px dashed var(--ink-soft); padding: 0.6rem 1rem; border-radius: 999px; display: inline-block; margin-bottom: 1rem; }
+  .facts { display: grid; gap: var(--space-m); align-content: start; border-left: 1px solid var(--ink); padding-left: var(--space-m); }
+  .fact { display: grid; gap: 0.4rem; }
+  .fact h2 { font-size: var(--step--1); font-family: var(--font-sans); }
+
+  .block-title { margin-bottom: var(--space-m); }
+  .dates { border-top: 1px solid var(--ink); }
+  .dates li {
+    display: grid; grid-template-columns: 10rem 1fr auto auto; gap: var(--space-m); align-items: baseline;
+    padding-block: 1rem; border-bottom: 1px solid var(--rule);
+  }
+  .dates .city { font-size: var(--step-1); }
+  .dates li.past { color: var(--ink-soft); }
+  .dates li:not(.past) .city::before {
+    content: ''; display: inline-block; width: 0.55em; height: 0.55em; border-radius: 50%; background: var(--accent); margin-right: 0.5em;
+  }
+
+  .credits { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0 var(--space-l); border-top: 1px solid var(--ink); }
+  .credits div { padding-block: 0.8rem; border-bottom: 1px solid var(--rule); }
+  .credits dd { margin: 0.15rem 0 0; }
+
+  .press { background: var(--ink); color: var(--paper); }
+  .press .meta { color: color-mix(in srgb, var(--paper) 65%, transparent); }
+  .quotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: var(--space-l); }
+  .quotes blockquote { font-size: var(--step-2); line-height: 1.2; margin-bottom: 0.8rem; }
+
+  .gallery { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: var(--space-m); align-items: end; }
+  .gallery :global(.media) { transition: clip-path 0.8s var(--ease-orbit); clip-path: inset(0); }
+  .gallery :global(.media:hover) { clip-path: ellipse(50% 50% at 50% 50%); }
+
+  .next { border-top: 1px solid var(--ink); }
+  .next :global(.next-link) { margin-top: 0.6rem; font-size: var(--step-4); line-height: 1.05; }
+
+  @media (max-width: 820px) {
+    .body { grid-template-columns: 1fr; }
+    .facts { border-left: 0; padding-left: 0; border-top: 1px solid var(--ink); padding-top: var(--space-m); }
+    .dates li { grid-template-columns: 1fr auto; }
+    .gallery { grid-template-columns: 1fr 1fr; }
+  }
+</style>

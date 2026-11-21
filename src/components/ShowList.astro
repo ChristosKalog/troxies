@@ -1,0 +1,95 @@
+---
+// Λίστα παραστάσεων. Στο hover εμφανίζεται ένας ελλειπτικός "φακός" με τη
+// φωτογραφία της παράστασης, που ακολουθεί τον δείκτη.
+import type { CollectionEntry } from 'astro:content';
+import Media from './Media.astro';
+
+interface Props { shows: CollectionEntry<'parastaseis'>[]; size?: 'l' | 'm' }
+const { shows, size = 'l' } = Astro.props;
+---
+
+<ul role="list" class:list={['shows', `shows--${size}`]} data-show-list>
+  {
+    shows.map((s) => (
+      <li>
+        <a class="row" href={`/parastaseis/${s.id}/`}>
+          <span class="yr meta">{s.data.years ?? '—'}</span>
+          <span class="ttl serif" transition:name={`show-${s.id}`}>{s.data.title}</span>
+          <span class="sum">{s.data.subtitle ?? s.data.summary}</span>
+          <span class="thumb" aria-hidden="true">
+            <Media src={s.data.cover} seed={s.id} label="Εδώ θα μπει φωτογραφία" />
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .shows { border-top: 1px solid var(--ink); }
+  .shows li { border-bottom: 1px solid var(--rule); position: relative; }
+  .row {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: var(--space-m);
+    align-items: baseline;
+    padding-block: clamp(1.2rem, 2.5vw, 2.2rem);
+    text-decoration: none;
+    transition: opacity var(--t-med) var(--ease-out);
+  }
+  .ttl {
+    font-size: var(--step-3); line-height: 1.05;
+    transition: transform var(--t-med) var(--ease-orbit);
+  }
+  .shows--m .ttl { font-size: var(--step-2); }
+  .sum { color: var(--ink-soft); font-size: var(--step--1); max-width: 36ch; }
+
+  /* η γραμμή κάτω από τη σειρά "τρέχει" στο hover */
+  .shows li::after {
+    content: ''; position: absolute; left: 0; bottom: -1px; height: 1px; width: 100%;
+    background: var(--accent); transform: scaleX(0); transform-origin: right;
+    transition: transform var(--t-med) var(--ease-orbit);
+  }
+  .shows li:hover::after { transform: scaleX(1); transform-origin: left; }
+
+  .shows:hover .row { opacity: 0.3; }
+  .shows:hover li:hover .row, .row:focus-visible { opacity: 1; }
+  .row:hover .ttl, .row:focus-visible .ttl { transform: translateX(1.4rem); }
+  .row:focus-visible { outline: none; }
+  .row:focus-visible .ttl { text-decoration: underline; text-decoration-thickness: 1px; }
+
+  /* φακός */
+  .thumb {
+    position: fixed; top: 0; left: 0; z-index: 20; pointer-events: none;
+    width: clamp(220px, 24vw, 380px);
+    translate: calc(var(--mx, -999px) - 50%) calc(var(--my, -999px) - 50%);
+    clip-path: ellipse(0% 0% at 50% 50%);
+    transition: clip-path 0.7s var(--ease-orbit);
+    rotate: var(--lean, 0deg);
+  }
+  .row:hover .thumb { clip-path: ellipse(50% 42% at 50% 50%); }
+  .thumb :global(.ph-label) { display: none; }
+
+  @media (max-width: 820px) {
+    .row { grid-template-columns: 1fr; gap: 0.35rem; }
+    .thumb { display: none; }
+  }
+  @media (hover: none) { .thumb { display: none; } }
+</style>
+
+<script>
+  function setupLens() {
+    document.querySelectorAll<HTMLElement>('[data-show-list]').forEach((list) => {
+      let lastX = 0;
+      list.addEventListener('pointermove', (e) => {
+        list.style.setProperty('--mx', `${e.clientX}px`);
+        list.style.setProperty('--my', `${e.clientY}px`);
+        // ο φακός γέρνει ελαφρά ανάλογα με την ταχύτητα της κίνησης
+        const lean = Math.max(-12, Math.min(12, (e.clientX - lastX) * 0.6));
+        list.style.setProperty('--lean', `${lean}deg`);
+        lastX = e.clientX;
+      });
+    });
+  }
+  document.addEventListener('astro:page-load', setupLens);
+</script>

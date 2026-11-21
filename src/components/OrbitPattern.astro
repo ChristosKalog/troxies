@@ -1,0 +1,47 @@
+---
+// Μοτίβο από τροχιές (ελλείψεις + μία τελεία). Χρησιμοποιείται στα placeholders
+// φωτογραφιών και σαν φόντο στο footer. Το "seed" αλλάζει τη σύνθεση.
+import { seedFrom } from '../lib/format';
+
+interface Props {
+  seed?: string;
+  count?: number;
+  width?: number;
+  height?: number;
+  class?: string;
+  label?: string;
+}
+const { seed = 'x', count = 4, width = 400, height = 300, class: cls, label } = Astro.props;
+
+const r = (k: number) => seedFrom(`${seed}:${k}`);
+const sx = width / 400;
+const sy = height / 300;
+const arcs = Array.from({ length: count }, (_, i) => ({
+  cx: (80 + r(i) * 240) * sx,
+  cy: (60 + r(i + 10) * 180) * sy,
+  rx: (90 + r(i + 20) * 260) * sx,
+  ry: (30 + r(i + 30) * 110) * sy,
+  rot: -50 + r(i + 40) * 100,
+}));
+const dot = arcs[1];
+---
+
+<svg
+  class:list={['orbit-pattern', cls]}
+  viewBox={`0 0 ${width} ${height}`}
+  preserveAspectRatio="xMidYMid slice"
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+>
+  {arcs.map((a) => (
+    <ellipse cx={a.cx} cy={a.cy} rx={a.rx} ry={a.ry} transform={`rotate(${a.rot} ${a.cx} ${a.cy})`} />
+  ))}
+  <circle class="pdot" cx={dot.cx + dot.rx * 0.7} cy={dot.cy} r={6 * Math.min(sx, sy) ** 0.5} transform={`rotate(${dot.rot} ${dot.cx} ${dot.cy})`} />
+</svg>
+
+<style>
+  .orbit-pattern { width: 100%; height: 100%; }
+  ellipse { fill: none; stroke: var(--ink); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: 0.45; }
+  .pdot { fill: var(--accent); }
+</style>

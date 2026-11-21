@@ -1,0 +1,103 @@
+---
+import { site } from '../site.config';
+import RingLink from './RingLink.astro';
+import Logo from './Logo.astro';
+
+const path = Astro.url.pathname;
+const isCurrent = (href: string) => path === href || (href !== '/' && path.startsWith(href));
+---
+
+<header class="site-header" transition:name="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/" aria-label="Τροχιές, αρχική σελίδα">
+      <Logo />
+      <span class="serif">τροχιές</span>
+    </a>
+
+    <nav aria-label="Κύριο μενού" class="desktop">
+      <ul role="list">
+        {site.nav.map((item, i) => (
+          <li><RingLink href={item.href} current={isCurrent(item.href)} tilt={[-5, 3, -2][i % 3]}>{item.label}</RingLink></li>
+        ))}
+      </ul>
+    </nav>
+
+    <button class="menu-btn" aria-expanded="false" aria-controls="mobile-menu" data-menu-btn>
+      <span class="menu-icon" aria-hidden="true"><i></i><i></i></span>
+      <span data-menu-label>Μενού</span>
+    </button>
+  </div>
+
+  <div class="mobile-menu" id="mobile-menu" data-menu hidden>
+    <nav aria-label="Μενού κινητού">
+      <ul role="list">
+        <li><a href="/" aria-current={path === '/' ? 'page' : undefined}>Αρχική</a></li>
+        {site.nav.map((item) => (
+          <li><a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>{item.label}</a></li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .bar { display: flex; align-items: center; justify-content: space-between; height: 4.5rem; }
+  .brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; font-size: 1.55rem; line-height: 1; }
+  .brand span { transform: translateY(-0.06em); }
+  .desktop ul { display: flex; gap: clamp(1.2rem, 3vw, 2.8rem); }
+  .desktop a { font-size: var(--step-0); }
+
+  .menu-btn { display: none; align-items: center; gap: 0.6rem; font-size: var(--step--1); position: relative; z-index: 2; }
+  .menu-icon { position: relative; width: 26px; height: 12px; }
+  .menu-icon i {
+    position: absolute; left: 0; right: 0; height: 12px; border: 1px solid currentColor; border-radius: 50%;
+    transition: transform var(--t-med) var(--ease-orbit);
+  }
+  .menu-btn[aria-expanded='true'] .menu-icon i:first-child { transform: rotate(60deg); }
+  .menu-btn[aria-expanded='true'] .menu-icon i:last-child { transform: rotate(-60deg); }
+
+  .mobile-menu {
+    position: fixed; inset: 0; z-index: 1; background: var(--ink); color: var(--paper);
+    display: grid; align-items: center; padding: var(--gutter);
+    clip-path: ellipse(0% 0% at calc(100% - 3rem) 2.2rem);
+    transition: clip-path 0.8s var(--ease-orbit);
+  }
+  .mobile-menu.is-open { clip-path: ellipse(150% 120% at calc(100% - 3rem) 2.2rem); }
+  .mobile-menu ul { display: grid; gap: 0.4rem; }
+  .mobile-menu a { font-family: var(--font-serif); font-size: var(--step-4); text-decoration: none; line-height: 1.15; }
+  .mobile-menu a[aria-current='page'] { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; }
+  :global(html.menu-open) .menu-btn { color: var(--paper); }
+  :global(html.menu-open) { overflow: hidden; }
+
+  @media (max-width: 720px) {
+    .desktop { display: none; }
+    .menu-btn { display: inline-flex; }
+  }
+</style>
+
+<script>
+  function setupMenu() {
+    const btn = document.querySelector<HTMLButtonElement>('[data-menu-btn]');
+    const menu = document.querySelector<HTMLElement>('[data-menu]');
+    const label = document.querySelector<HTMLElement>('[data-menu-label]');
+    if (!btn || !menu || !label) return;
+    const set = (open: boolean) => {
+      btn.setAttribute('aria-expanded', String(open));
+      label.textContent = open ? 'Κλείσιμο' : 'Μενού';
+      document.documentElement.classList.toggle('menu-open', open);
+      if (open) { menu.hidden = false; requestAnimationFrame(() => menu.classList.add('is-open')); }
+      else { menu.classList.remove('is-open'); setTimeout(() => { if (!menu.classList.contains('is-open')) menu.hidden = true; }, 800); }
+    };
+    btn.onclick = () => set(btn.getAttribute('aria-expanded') !== 'true');
+    menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => set(false)));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') set(false); });
+  }
+  document.addEventListener('astro:page-load', setupMenu);
+  document.addEventListener('astro:before-swap', () => document.documentElement.classList.remove('menu-open'));
+</script>

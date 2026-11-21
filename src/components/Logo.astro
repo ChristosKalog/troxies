@@ -1,0 +1,20 @@
+---
+// Σήμα: δύο τροχιές που διασταυρώνονται + μια τελεία. Μέχρι να έρθει το πραγματικό λογότυπο.
+interface Props { size?: number }
+const { size = 34 } = Astro.props;
+---
+
+<svg class="logo" width={size} height={size} viewBox="-20 -20 40 40" aria-hidden="true">
+  <ellipse rx="18" ry="7" transform="rotate(-28)" />
+  <ellipse rx="18" ry="7" transform="rotate(28)" />
+  <circle class="logo-dot" r="2.6" cx="15.8" cy="-8.4" />
+</svg>
+
+<style>
+  .logo { overflow: visible; }
+  ellipse { fill: none; stroke: currentColor; stroke-width: 1.3; }
+  .logo-dot { fill: currentColor; transform-origin: 0 0; }
+  :global(a:hover) > .logo .logo-dot,
+  :global(a:hover) .logo .logo-dot { animation: logo-orbit 1.4s var(--ease-orbit); }
+  @keyframes logo-orbit { to { transform: rotate(360deg); } }
+</style>

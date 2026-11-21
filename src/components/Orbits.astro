@@ -1,0 +1,91 @@
+---
+// Σύστημα τροχιών. Κάθε τροχιά = μια έλλειψη με μια τελεία που την ακολουθεί.
+//   <Orbits count={6} />                       → διακοσμητικό (αρχική)
+//   <Orbits labels={['Νοεμή', 'Χάρις']} ids={[...]} /> → με ονόματα (σελίδα Ομάδα)
+import { seedFrom } from '../lib/format';
+
+interface Props {
+  count?: number;
+  labels?: string[];
+  ids?: string[];
+  seed?: string;
+  interactive?: boolean;
+  class?: string;
+  title?: string;
+}
+
+const { labels, ids, seed = 'τροχιές', interactive = true, class: cls, title = 'Τροχιές σε κίνηση' } = Astro.props;
+const n = labels?.length ?? Astro.props.count ?? 6;
+
+// Σταθερά "τυχαίες" παράμετροι, ίδιες σε κάθε build
+const rand = (k: number) => seedFrom(`${seed}-${k}`);
+const orbits = Array.from({ length: n }, (_, i) => {
+  const f = n === 1 ? 1 : i / (n - 1);
+  return {
+    id: ids?.[i] ?? String(i),
+    label: labels?.[i],
+    rx: 120 + f * 350,
+    ratio: 0.28 + rand(i) * 0.42,
+    // οι κλίσεις απλώνονται ώστε οι τροχιές να διασταυρώνονται
+    rot: -55 + ((i * 47) % 110) + (rand(i + 50) - 0.5) * 18,
+    speed: (0.55 - f * 0.3) * (rand(i + 99) > 0.5 ? 1 : -1),
+    phase: rand(i + 7) * Math.PI * 2,
+    r: labels ? 7 : 5 + rand(i + 3) * 6,
+  };
+});
+---
+
+<svg
+  class:list={['orbits', cls, { 'orbits--labelled': !!labels }]}
+  viewBox="-500 -500 1000 1000"
+  data-orbits
+  data-interactive={String(interactive)}
+  role="img"
+  aria-label={title}
+>
+  <circle class="core" r="9" />
+  {
+    orbits.map((o) => (
+      <g data-orbit={o.id} data-rx={o.rx} data-ratio={o.ratio} data-rot={o.rot} data-speed={o.speed} data-phase={o.phase} data-r={o.r} transform={`rotate(${o.rot})`}>
+        <ellipse rx={o.rx} ry={o.rx * o.ratio * 0.72} />
+      </g>
+    ))
+  }
+  {orbits.map((o) => <circle class="dot" data-dot={o.id} cx={o.rx} cy="0" r={o.r} />)}
+  {orbits.map((o) => o.label && <text class="label" data-label={o.id} x={o.rx + 14} y="5">{o.label}</text>)}
+</svg>
+
+<style>
+  .orbits { width: 100%; height: auto; overflow: visible; }
+  ellipse {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+    transition: stroke var(--t-fast), stroke-width var(--t-fast), opacity var(--t-med);
+  }
+  .core { fill: var(--accent); }
+  .dot { fill: var(--ink); stroke: var(--ink); stroke-width: 1.5; vector-effect: non-scaling-stroke; transition: fill var(--t-fast); }
+  .dot.is-back { fill: var(--paper); }
+  .label {
+    font-family: var(--font-sans);
+    font-size: 22px;
+    fill: var(--ink);
+    opacity: 0;
+    transition: opacity var(--t-fast);
+    paint-order: stroke;
+    stroke: var(--paper);
+    stroke-width: 6px;
+  }
+
+  /* επισήμανση μίας τροχιάς */
+  .has-active g ellipse { opacity: 0.18; }
+  .has-active .dot { opacity: 0.25; }
+  .has-active g.is-active ellipse { opacity: 1; stroke: var(--accent); stroke-width: 2; }
+  .has-active .dot.is-active { opacity: 1; fill: var(--accent); stroke: var(--accent); }
+  .label.is-active { opacity: 1; }
+</style>
+
+<script>
+  import '../scripts/orbits';
+</script>

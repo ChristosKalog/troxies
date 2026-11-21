@@ -1,0 +1,13 @@
+# Ρυθμίσεις για το Netlify: κάθε push στο GitHub χτίζει και ανεβάζει αυτόματα το site.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Η σελίδα 404 του site
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404

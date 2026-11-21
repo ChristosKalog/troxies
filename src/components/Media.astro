@@ -1,0 +1,52 @@
+---
+// Εικόνα ή, αν δεν υπάρχει ακόμα, γεωμετρικό placeholder με σημείωση
+// ότι εκεί θα μπει φωτογραφία.
+//   <Media src="/images/foto.jpg" alt="..." />
+//   <Media seed="spitia" label="Εδώ θα μπει φωτογραφία της ομάδας" />  → placeholder
+import OrbitPattern from './OrbitPattern.astro';
+
+interface Props {
+  src?: string;
+  alt?: string;
+  seed?: string;
+  ratio?: string;        // π.χ. "4 / 3"
+  class?: string;
+  label?: string;        // κείμενο του placeholder
+}
+const { src, alt = '', seed = 'x', ratio = '4 / 3', class: cls, label = 'Εδώ θα μπει φωτογραφία' } = Astro.props;
+---
+
+<figure class:list={['media', cls, { 'is-placeholder': !src }]} style={`--ratio: ${ratio}`}>
+  {
+    src ? (
+      <img src={src} alt={alt} loading="lazy" decoding="async" />
+    ) : (
+      <>
+        <OrbitPattern seed={seed} label={label} />
+        <figcaption class="ph-label">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="1" /><circle cx="12" cy="12.5" r="3.6" /><path d="M8.5 6 10 4h4l1.5 2" /></svg>
+          {label}
+        </figcaption>
+      </>
+    )
+  }
+</figure>
+
+<style>
+  .media { position: relative; aspect-ratio: var(--ratio); overflow: hidden; background: var(--wash); }
+  .media img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.05); }
+  .media :global(.orbit-pattern) { position: absolute; inset: 0; }
+  .ph-label {
+    position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    max-width: calc(100% - 2rem);
+    padding: 0.45rem 0.9rem;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    font-size: var(--step--1);
+    line-height: 1.25;
+    text-align: center;
+  }
+  .ph-label svg { width: 1.1em; height: 1.1em; flex: none; fill: none; stroke: var(--accent); stroke-width: 1.5; }
+</style>

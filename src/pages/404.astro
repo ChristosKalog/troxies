@@ -1,0 +1,24 @@
+---
+import Base from '../layouts/Base.astro';
+import Orbits from '../components/Orbits.astro';
+import RingLink from '../components/RingLink.astro';
+---
+
+<Base title="Εκτός τροχιάς">
+  <section class="section lost" data-orbit-host>
+    <div class="wrap grid">
+      <div>
+        <h1>Εκτός τροχιάς</h1>
+        <p class="lead">Αυτή η σελίδα δεν υπάρχει, ή άλλαξε θέση τη νύχτα.</p>
+        <p style="margin-top: 2rem"><RingLink href="/">Πίσω στην αρχική</RingLink></p>
+      </div>
+      <Orbits count={1} seed="lost" />
+    </div>
+  </section>
+</Base>
+
+<style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-l); align-items: center; min-height: 60vh; }
+  h1 { font-size: var(--step-5); line-height: 0.9; margin-bottom: var(--space-m); }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+</style>

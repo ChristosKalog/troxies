@@ -1,0 +1,60 @@
+---
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { site } from '../site.config';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+const { title, description = site.description } = Astro.props;
+const fullTitle = title ? `${title} | ${site.name}` : `${site.name}, εταιρεία θεάτρου`;
+---
+
+<!doctype html>
+<html lang="el">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content="el_GR" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <ClientRouter fallback="animate" />
+  </head>
+  <body>
+    <a class="visually-hidden" href="#main">Μετάβαση στο περιεχόμενο</a>
+    <Nav />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+
+    <script>
+      // Θυμόμαστε πού έγινε το κλικ, ώστε η επόμενη σελίδα να "ανοίξει" από εκεί.
+      let px = '50%', py = '50%';
+      const apply = () => {
+        document.documentElement.style.setProperty('--vt-x', px);
+        document.documentElement.style.setProperty('--vt-y', py);
+      };
+      document.addEventListener('click', (e) => {
+        const a = (e.target as Element).closest('a');
+        if (!a) return;
+        px = `${e.clientX}px`;
+        py = `${e.clientY}px`;
+        // πληκτρολόγιο: κλικ χωρίς συντεταγμένες → από το κέντρο του συνδέσμου
+        if (e.clientX === 0 && e.clientY === 0) {
+          const b = a.getBoundingClientRect();
+          px = `${b.left + b.width / 2}px`; py = `${b.top + b.height / 2}px`;
+        }
+        apply();
+      }, true);
+      document.addEventListener('astro:after-swap', apply);
+      document.addEventListener('astro:after-swap', () => { px = '50%'; py = '50%'; });
+    </script>
+  </body>
+</html>

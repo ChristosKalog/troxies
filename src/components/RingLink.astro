@@ -1,0 +1,24 @@
+---
+// Σύνδεσμος που, στο hover, αποκτά μια έλλειψη που "ζωγραφίζεται" γύρω του.
+interface Props {
+  href: string;
+  current?: boolean;
+  class?: string;
+  external?: boolean;
+  tilt?: number;
+}
+const { href, current = false, class: cls, external = false, tilt = -4 } = Astro.props;
+---
+
+<a
+  class:list={['ring-link', cls]}
+  href={href}
+  aria-current={current ? 'page' : undefined}
+  target={external ? '_blank' : undefined}
+  rel={external ? 'noopener' : undefined}
+>
+  <slot />
+  <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+    <ellipse cx="50" cy="20" rx="49" ry="18" pathLength="1" transform={`rotate(${tilt} 50 20)`} />
+  </svg>
+</a>

@@ -1,0 +1,47 @@
+---
+import Base from '../layouts/Base.astro';
+import Orbits from '../components/Orbits.astro';
+import RingLink from '../components/RingLink.astro';
+import { site } from '../site.config';
+
+const channels = [
+  { label: 'Email', value: site.email, url: `mailto:${site.email}`, external: false },
+  ...site.socials.map((s) => ({ label: s.label, value: s.handle, url: s.url, external: true })),
+];
+---
+
+<Base title="Επικοινωνία" description="Επικοινωνία με την Εταιρεία Θεάτρου Τροχιές.">
+  <section class="section contact" data-orbit-host>
+    <div class="contact-orbits" aria-hidden="true">
+      <Orbits count={3} seed="contact" />
+    </div>
+    <div class="wrap inner">
+      <h1><span class="reveal-line"><span>Επικοινωνία</span></span></h1>
+      <p class="lead">Για συνεργασίες, περιοδείες, φιλοξενίες και εργαστήρια, γράψτε μας.</p>
+
+      <ul role="list" class="channels">
+        {channels.map((c, i) => (
+          <li>
+            <span class="meta">{c.label}</span>
+            <RingLink href={c.url} external={c.external} tilt={[-3, 4, -6][i % 3]} class="channel">
+              {c.value}
+            </RingLink>
+          </li>
+        ))}
+      </ul>
+
+      <p class="meta base">{site.fullName}, {site.city}</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .contact { position: relative; overflow: hidden; min-height: calc(100svh - 4.5rem); }
+  .contact-orbits { position: absolute; width: min(90vh, 80vw); right: -14vw; bottom: -20vh; opacity: 0.9; }
+  .inner { position: relative; display: grid; gap: var(--space-l); }
+  h1 { font-size: var(--step-5); line-height: 0.9; }
+  .channels { display: grid; gap: var(--space-m); border-top: 1px solid var(--ink); padding-top: var(--space-m); max-width: 60rem; }
+  .channels li { display: grid; grid-template-columns: 8rem 1fr; align-items: baseline; gap: var(--space-m); }
+  .channels :global(.channel) { font-size: var(--step-3); font-weight: 280; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  @media (max-width: 720px) { .channels li { grid-template-columns: 1fr; gap: 0.2rem; } }
+</style>
